@@ -114,9 +114,40 @@ def InsertarPeople():
     return jsonify({"msg":"Planeta insertado correctamente"}),200
 
     #Actualizar un planeta
+@app.route("/planets/<int:id_planet>",methods = ["PUT"])
+def ActualizarPlaneta(id_planet):
+    data = request.json
+    planet = Planets.query.filter_by(id=id_planet).first()
+    if planet == None:
+        return jsonify({"msg":"El planeta no existe"})
+    
+    planet.name=data["name"],
+    planet.rotation_period=data["rotation_period"],
+    planet.orbital_period=data["orbital_period"],
+    planet.diameter=data["diameter"],
+    planet.climate=data["climate"],
+    planet.gravity=data["gravity"],
+    planet.terrain=data["terrain"],
+    planet.surface_water=data["surface_water"],
+    planet.population=data["population"]
+
+    db.session.commit()
+
+    return jsonify({"msg":"El planeta se actualizo correctamente"})
+
+
 
     #Eliminar un planeta
+@app.route("/planets/<int:id_planet>",methods = ["DELETE"])
+def BorrarPlanets(id_planet):
+    planetExist = Planets.query.filter_by(id=id_planet).first()
+    if planetExist == None:
+        return jsonify({"msg":"El Planeta no existe"})
+    db.session.delete(planetExist)
+    db.session.commit()
+    return jsonify({"msg":"El planeta se borro"})
 
+    #Planeta espesifico 
 @app.route('/planets/<int:idPlanet>')
 def Obtener_Planeta_Espesifico(idPlanet):
     print("xd")
@@ -127,6 +158,8 @@ def Obtener_Planeta_Espesifico(idPlanet):
         return jsonify({"msg":"No hay Planeta con ese id"}),404
     else: 
         return jsonify({"msg":"el planeta existe","result":Planets_query.serialize()}),200
+
+
     
 
 
@@ -161,6 +194,43 @@ def Obtener_StarShip_Espesifica(idStarShip):
     else: 
         return jsonify({"msg":"la nave existe","result":Starships_query.serialize()}),200
 
+    #Actualizar starship
+@app.route("/starships/<int:id_starship>",methods = ["PUT"])
+def ActualizarStarShip(id_starship):
+    data = request.json
+    starshipsExist = Starships.query.filter_by(id=id_starship).first()
+    if starshipsExist == None:
+        return jsonify({"msg":"La Nave no existe"})
+    
+
+    starshipsExist.name=data["name"],
+    starshipsExist.model=data["model"],
+    starshipsExist.manufacturer=data["manufacturer"],
+    starshipsExist.cost_in_credits=data["cost_in_credits"],
+    starshipsExist.length=data["length"],
+    starshipsExist.max_atmosphering_speed=data["max_atmosphering_speed"],
+    starshipsExist.crew=data["crew"],
+    starshipsExist.passengers=data["passengers"],
+    starshipsExist.cargo_capacity=data["cargo_capacity"],
+    starshipsExist.consumables=data["consumables"],
+    starshipsExist.MGLT=data["MGLT"] 
+    starshipsExist.hyperdrive_rating=data["hyperdrive_rating"] 
+    starshipsExist.starship_class=data["starship_class"] 
+    
+    db.session.commit()
+
+    return jsonify({"msg":"El vehicle se actualizo correctamente"})
+
+    #Borrar character
+@app.route("/starships/<int:id_starships>",methods = ["DELETE"])
+def BorrarStarships(id_starships):
+    starShipExist = Starships.query.filter_by(id=id_starships).first()
+    if starShipExist == None:
+        return jsonify({"msg":"La Nave no existe"})
+    db.session.delete(starShipExist)
+    db.session.commit()
+    return jsonify({"msg":"La Nave se borro"})
+
 
 
 # Peticion para Vehiculos y Vehiculo espesifico
@@ -184,13 +254,13 @@ def Obtener_Vehicles():
     
     #Insertar Vehiculo
 @app.route("/vehicles",methods=["POST"])
-def InsertarPeople():
+def InsertarVehicle():
     request_body = request.json
     
-    planetExist = Vehicles.query.filter_by(name=request_body["id"]).first()
+    vehicleExist = Vehicles.query.filter_by(name=request_body["id"]).first()
 
-    if planetExist == None:
-        newPlanet = Vehicles(
+    if vehicleExist == None:
+        newVehicle = Vehicles(
             name=request_body["name"],
             model=request_body["model"],
             manufacturer=request_body["manufacturer"],
@@ -206,7 +276,7 @@ def InsertarPeople():
     else:
         return jsonify({"msg":"Este vehiculo ya existe"})
     
-    db.session.add(newPlanet)
+    db.session.add(newVehicle)
     db.session.commit()
 
     return jsonify({"msg":"Planeta insertado correctamente"}),200
@@ -214,9 +284,43 @@ def InsertarPeople():
     
 
     #Actualizar Vehiculo
+@app.route("/planets/<int:id_vehicle>",methods = ["PUT"])
+def ActualizarVehicle(id_vehicle):
+    data = request.json
+    vehicle = Vehicles.query.filter_by(id=id_vehicle).first()
+    if vehicle == None:
+        return jsonify({"msg":"El vehiclea no existe"})
+    
+    vehicle.name=data["name"],
+    vehicle.model=data["model"],
+    vehicle.manufacturer=data["manufacturer"],
+    vehicle.cost_in_credits=data["cost_in_credits"],
+    vehicle.length=data["length"],
+    vehicle.max_atmosphering_speed=data["max_atmosphering_speed"],
+    vehicle.crew=data["crew"],
+    vehicle.passengers=data["passengers"],
+    vehicle.cargo_capacity=data["cargo_capacity"],
+    vehicle.consumables=data["consumables"],
+    vehicle.vehicle_class=data["vehicle_class"] 
+
+    db.session.commit()
+
+    return jsonify({"msg":"El vehicle se actualizo correctamente"})
+
 
     #Borrar Vehiculo 
+@app.route("/vehicles/<int:id_vehicle>",methods = ["DELETE"])
+def BorrarVehiculo(id_vehicle):
+    vehicleExist = Vehicles.query.filter_by(id=id_vehicle).first()
+    if vehicleExist == None:
+        return jsonify({"msg":"El vehiculo no existe"})
+    db.session.delete(vehicleExist)
+    db.session.commit()
+    return jsonify({"msg":"El vehiculo se borro"})
+    
 
+
+    #Vehiculo espesifico
 @app.route('/vehicles/<int:idVehicle>')
 def Obtener_Vehicle_Espesifica(idVehicle):
     #generamos la consulta
@@ -259,6 +363,38 @@ def Obtener_Personaje_Espesifica(idPj):
     else: 
         return jsonify({"msg":"El Pj existe","result":Personaje_query.serialize()}),200
 
+    #Actualizar character
+@app.route("/character/<int:id_character>",methods = ["PUT"])
+def ActualizarCharacter(id_character):
+    data = request.json
+    character = Characters.query.filter_by(id=id_character).first()
+    if character == None:
+        return jsonify({"msg":"El character no existe"})
+    
+
+    character.birth_year= data["birth_year"]
+    character.eye_color= data["eye_color"]
+    character.gender= data["gender"]
+    character.hair_color= data["hair_color"]
+    character.height= data["height"]
+    character.homeworld: data["homeworld"]
+    character.id= data["id"]
+    character.name= data["name"],
+    character.skin_color=data["skin_color"]
+
+    db.session.commit()
+
+    return jsonify({"msg":"El vehicle se actualizo correctamente"})
+
+    #Borrar character
+@app.route("/characters/<int:id_character>",methods = ["DELETE"])
+def BorrarCharacter(id_character):
+    characterExist = Characters.query.filter_by(id=id_character).first()
+    if characterExist == None:
+        return jsonify({"msg":"El Personaje no existe"})
+    db.session.delete(characterExist)
+    db.session.commit()
+    return jsonify({"msg":"El Personaje se borro"})
 
 
 
