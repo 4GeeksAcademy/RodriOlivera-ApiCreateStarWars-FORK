@@ -603,17 +603,22 @@ def RegisterUser():
 @app.route("/login",methods = ["POST"])
 def Loginuser():
     bodyInfo = request.json
-    email = bodyInfo["email"]
+    emailI = bodyInfo["email"]
     password = bodyInfo["password"]
     # traigo el usuario en base al email
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter_by(email=emailI).first()
     #chekeo si ese usuario existe
     if user != None:
         userCheck = user.serialize()
-        print(userCheck)
-        if email == userCheck["email"] and password == userCheck["password"]:
-            access_token = create_access_token(identity=email)
-            return jsonify({"msg":"Login Correcto","token":access_token}),200
+        if emailI == userCheck["email"] and password == userCheck["password"]:
+            access_token = create_access_token(identity=emailI)
+            return jsonify({"msg":"Login Correcto","token":access_token,"info":{
+                "email":userCheck["email"],
+                "id":userCheck["id"],
+                "lastname":userCheck["lastname"],
+                "name":userCheck["name"],
+                "subscription_date":userCheck["subscription_date"]
+        }}),200
         return jsonify({"msg":"Error en las credenciales."})
 
     return jsonify({"msg":"No hay ningun usuario con este email"}),404
@@ -634,7 +639,34 @@ def Obtener_Favoritos_User(idUser):
         return jsonify({"msg":"Este usuario no tiene ningun favorito"})
     else : 
         result = list(map(lambda item:item.serialize(),query_user_Favorites))
-        return jsonify({"msg":"estos son los favoritos del usuario","result":result,"user":current_user}),200 
+        def CargarNombreEnBaseID(item): 
+            objetsearch = ""
+            valueSearch = 0
+            for clave in item:
+                if clave != "id" and clave != "id_user":
+                    if item[clave] != None:
+                        objetsearch = clave
+                        valueSearch = item[clave]
+            if objetsearch == "id_characters":
+                infoCharacter = Characters.query.filter_by(id=valueSearch).first()
+                finalInfo = infoCharacter.serialize()
+                return finalInfo["name"]
+            elif objetsearch == "id_planets":
+                planetsinfo = Planets.query.filter_by(id=valueSearch).first()
+                finalInfo = planetsinfo.serialize()
+                return finalInfo["name"]
+            elif objetsearch == "id_vehicles":
+                infovehicle = Vehicles.query.filter_by(id=valueSearch).first()
+                finalInfo = infovehicle.serialize()
+                return finalInfo["name"]
+            elif objetsearch == "id_starships":
+                StarshipsInfo = Starships.query.filter_by(id=valueSearch).first()
+                finalInfo = StarshipsInfo.serialize()
+                return finalInfo["name"]
+
+
+        dataFinal = list(map(lambda item:CargarNombreEnBaseID(item),result))
+        return jsonify({"msg":"estos son los favoritos del usuario","result":result,"user":current_user,"dataFinal":dataFinal}),200 
             
 
 
