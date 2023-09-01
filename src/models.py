@@ -23,6 +23,7 @@ class User(db.Model):
             "lastname": self.lastname,
             "subscription_date": self.subscription_date,
             "email": self.email,
+            "password":self.password
             # do not serialize the password, its a security breach
         }
     
@@ -83,7 +84,7 @@ class Starships(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "email": self.email,
+            "name":self.name,
             "model": self.model,
             "manufacturer": self.manufacturer,
             "cost_in_credits": self.cost_in_credits,
@@ -192,4 +193,3 @@ class Favorite(db.Model):
             "id_vehicles": self.id_vehicles,
             "id_starships": self.id_starships,
         }
-

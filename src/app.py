@@ -9,6 +9,14 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User,Characters,Planets,Vehicles,Starships,Favorite
+import datetime
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+
+
 #from models import Person
 
 app = Flask(__name__)
@@ -24,6 +32,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
+app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
+jwt = JWTManager(app)
 setup_admin(app)
 
 # Handle/serialize errors like a JSON object
@@ -183,6 +193,7 @@ def Obtener_StarShips():
         return jsonify(response_body),200
 
 
+
 @app.route('/starships/<int:idStarShip>')
 def Obtener_StarShip_Espesifica(idStarShip):
     print("xd")
@@ -193,6 +204,38 @@ def Obtener_StarShip_Espesifica(idStarShip):
         return jsonify({"msg":"No hay Nave con ese id"}),404
     else: 
         return jsonify({"msg":"la nave existe","result":Starships_query.serialize()}),200
+
+    #Insertar Starship
+@app.route("/starships",methods=["POST"])
+def InsertarStarShip():
+    request_body = request.json
+    
+    starShipExist = Starships.query.filter_by(name=request_body["name"]).first()
+
+    if starShipExist == None:
+        newStarShip = Starships(
+            name = request_body["name"],
+	        model = request_body["model"],
+	        manufacturer = request_body["manufacturer"],
+	        cost_in_credits = request_body["cost_in_credits"],
+	        length = request_body["length"],
+	        max_atmosphering_speed = request_body["max_atmosphering_speed"],
+	        crew = request_body["crew"],
+	        passengers = request_body["passengers"],
+	        cargo_capacity = request_body["cargo_capacity"],
+	        consumables = request_body["consumables"],
+	        hyperdrive_rating = request_body["hyperdrive_rating"],
+	        MGLT = request_body["hyperdrive_rating"],
+	        starship_class = request_body["starship_class"]
+        )
+    else:
+        return jsonify({"msg":"Esta Nave ya existe"})
+    
+    db.session.add(newStarShip)
+    db.session.commit()
+
+    return jsonify({"msg":"Nave insertada correctamente"}),200
+
 
     #Actualizar starship
 @app.route("/starships/<int:id_starship>",methods = ["PUT"])
@@ -284,7 +327,7 @@ def InsertarVehicle():
     
 
     #Actualizar Vehiculo
-@app.route("/planets/<int:id_vehicle>",methods = ["PUT"])
+@app.route("/vehicles/<int:id_vehicle>",methods = ["PUT"])
 def ActualizarVehicle(id_vehicle):
     data = request.json
     vehicle = Vehicles.query.filter_by(id=id_vehicle).first()
@@ -324,7 +367,7 @@ def BorrarVehiculo(id_vehicle):
 @app.route('/vehicles/<int:idVehicle>')
 def Obtener_Vehicle_Espesifica(idVehicle):
     #generamos la consulta
-    Vehicles_query = Starships.query.filter_by(id=idVehicle).first()
+    Vehicles_query = Vehicles.query.filter_by(id=idVehicle).first()
 
     if Vehicles_query == None :
         return jsonify({"msg":"No hay Vehiculo con ese id"}),404
@@ -362,9 +405,37 @@ def Obtener_Personaje_Espesifica(idPj):
         return jsonify({"msg":"No hay Pj con ese id"}),404
     else: 
         return jsonify({"msg":"El Pj existe","result":Personaje_query.serialize()}),200
+    #Insertar character
+    #Insertar Vehiculo
+@app.route("/characters",methods=["POST"])
+def InsertarCharacter():
+    request_body = request.json
+    
+    characterExist = Characters.query.filter_by(name=request_body["name"]).first()
+
+    if characterExist == None:
+        newCharacter = Characters(
+            birth_year = request_body["birth_year"],
+            eye_color = request_body["eye_color"],
+            gender = request_body["gender"],
+            hair_color = request_body["hair_color"],
+            height = request_body["height"],
+            homeworld = request_body["homeworld"],
+            name = request_body["name"],
+            skin_color = request_body["skin_color"],
+        )
+    else:
+        return jsonify({"msg":"Este Personaje ya existe"})
+    
+    db.session.add(newCharacter)
+    db.session.commit()
+
+    return jsonify({"msg":"Personaje insertado correctamente"}),200
+
+
 
     #Actualizar character
-@app.route("/character/<int:id_character>",methods = ["PUT"])
+@app.route("/characters/<int:id_character>",methods = ["PUT"])
 def ActualizarCharacter(id_character):
     data = request.json
     character = Characters.query.filter_by(id=id_character).first()
@@ -378,13 +449,12 @@ def ActualizarCharacter(id_character):
     character.hair_color= data["hair_color"]
     character.height= data["height"]
     character.homeworld: data["homeworld"]
-    character.id= data["id"]
     character.name= data["name"],
     character.skin_color=data["skin_color"]
 
     db.session.commit()
 
-    return jsonify({"msg":"El vehicle se actualizo correctamente"})
+    return jsonify({"msg":"El Personaje se actualizo correctamente"})
 
     #Borrar character
 @app.route("/characters/<int:id_character>",methods = ["DELETE"])
@@ -395,27 +465,6 @@ def BorrarCharacter(id_character):
     db.session.delete(characterExist)
     db.session.commit()
     return jsonify({"msg":"El Personaje se borro"})
-
-
-
-
-# Listar todos los favoritos que pertenecen al usuario actual
-@app.route('/user/<int:idUser>/favorite',methods=["GET"])
-def Obtener_Favoritos_User(idUser):
-    #generamos la consulta
-    query_user_Favorites = Favorite.query.filter_by(id_user=idUser).all()
-    print(query_user_Favorites)
-    if query_user_Favorites == []:
-        return jsonify({"msg":"Este usuario no tiene ningun favorito"})
-    else : 
-        result = list(map(lambda item:item.serialize(),query_user_Favorites))
-        print("xdddddddaaa")
-        print(result)
-        if len(result) == 0 :
-            return jsonify({"Este usuario no tiene ningun favorito"}),404
-        else: 
-            return jsonify({"msg":"El Pj existe","result":result}),200
-
 
 #  Añade un nuevo planeta favorito al usuario actual con el planet id = planet_id.
 @app.route("/user/favorite/planet/<int:planet_id>",methods=["POST"])
@@ -473,7 +522,6 @@ def InsertarCharacterFavorite(character_id):
 
 
 # Elimina un planet favorito con el id = planet_id
-# En mi Caso, lo hare con una peticion update , ya que no puedo eliminar todo el registro
 @app.route("/user/favorite/planet/<int:planet_id>",methods=["DELETE"])
 def BorrarPlanetFavorito(planet_id):
     #Validar si el usuario existe y el planeta
@@ -524,6 +572,73 @@ def BorrarPeopleFavorito(character_id):
     }
     return jsonify(response_body),200
 
+#Registrar Usuario
+@app.route("/register",methods = ["POST"])
+def RegisterUser():
+    bodyInfo = request.json
+    name = bodyInfo["name"]
+    lastname = bodyInfo["lastname"]
+    subscription_date = datetime.datetime.now()
+    email = bodyInfo["email"]
+    password = bodyInfo["password"]
+    #Validar si el email ya existe , si existe deberiamos de decirle al usuario que ingrese una nueva
+    emailExist = User.query.filter_by(email=email).first()
+    if emailExist == None:
+        print("No existe")
+        user = User(
+        name = name,
+        lastname = lastname,
+        subscription_date = subscription_date,
+        email = email,
+        password = password
+        )
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({"msg":"Usuario creado"}),200
+    return jsonify({"msg":"Debe de ingresar un correo inexistente "}),404
+
+
+
+# Login
+@app.route("/login",methods = ["POST"])
+def Loginuser():
+    bodyInfo = request.json
+    email = bodyInfo["email"]
+    password = bodyInfo["password"]
+    # traigo el usuario en base al email
+    user = User.query.filter_by(email=email).first()
+    #chekeo si ese usuario existe
+    if user != None:
+        userCheck = user.serialize()
+        print(userCheck)
+        if email == userCheck["email"] and password == userCheck["password"]:
+            access_token = create_access_token(identity=email)
+            return jsonify({"msg":"Login Correcto","token":access_token}),200
+        return jsonify({"msg":"Error en las credenciales."})
+
+    return jsonify({"msg":"No hay ningun usuario con este email"}),404
+
+# Listar todos los favoritos que pertenecen al usuario actual
+@app.route('/user/<int:idUser>/favorite',methods=["GET"])
+@jwt_required()
+def Obtener_Favoritos_User(idUser):
+    current_user = get_jwt_identity()
+    #generamos la consulta
+    user = User.query.filter_by(id=idUser).first()
+    query_user_Favorites = Favorite.query.filter_by(id_user=idUser).all()
+
+    if user == None:
+        return jsonify({"msg":"El usuario no existe"})
+    
+    if query_user_Favorites == []:
+        return jsonify({"msg":"Este usuario no tiene ningun favorito"})
+    else : 
+        result = list(map(lambda item:item.serialize(),query_user_Favorites))
+        return jsonify({"msg":"estos son los favoritos del usuario","result":result,"user":current_user}),200 
+            
+
+
+#Ruta favorito protegida
 
 
 # this only runs if `$ python src/app.py` is executed
