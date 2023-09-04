@@ -17,6 +17,7 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 
 
+
 #from models import Person
 
 app = Flask(__name__)
@@ -492,6 +493,59 @@ def InsertarPlanetaFav(planet_id):
         return jsonify(response_body),200
     return jsonify({"msg":"Ya lo tienes en favoritos"}),404
 
+#Añade un nuevo Starship a favorito
+
+@app.route("/user/favorite/starship/<int:starship_id>",methods=["POST"])
+def InsertarStarShipFavorito(starship_id):
+    #Validar si el usuario existe y el planeta
+    infoBody = request.json
+    user = User.query.filter_by(id=infoBody["id_user"]).first()
+    starshipExist = Starships.query.filter_by(id=starship_id).first()
+
+    if user == None:
+        return jsonify({"msg":"el usuario no existe"}),404
+    elif starshipExist == None:
+        return jsonify({"msg":"El planeta no existe"}),404
+    
+    # ahora validaremos que pueda insertarlo solo si no lo tiene en favs
+    favExist = Favorite.query.filter_by(id_user =infoBody["id_user"], id_starships = starship_id).first()
+    if favExist == None:
+        newFavorite = Favorite(id_user=infoBody["id_user"],id_starships=starship_id)
+        db.session.add(newFavorite)
+        db.session.commit()
+ 
+        response_body = {
+            "msg":"StarShip Añadido a favoritos"
+        }
+        return jsonify(response_body),200
+    return jsonify({"msg":"Ya lo tienes en favoritos"}),404
+
+# Añade un nuevo vehiculo a favorito
+@app.route("/user/favorite/vehicle/<int:vehicle_id>",methods=["POST"])
+def InsertarVehiculoFavorito(vehicle_id):
+    #Validar si el usuario existe y el planeta
+    infoBody = request.json
+    user = User.query.filter_by(id=infoBody["id_user"]).first()
+    vehiculo_exist = Vehicles.query.filter_by(id=vehicle_id).first()
+
+    if user == None:
+        return jsonify({"msg":"el usuario no existe"}),404
+    elif vehiculo_exist == None:
+        return jsonify({"msg":"El vehiculo no existe"}),404
+    
+    # ahora validaremos que pueda insertarlo solo si no lo tiene en favs
+    favExist = Favorite.query.filter_by(id_user =infoBody["id_user"], id_vehicles = vehicle_id).first()
+    if favExist == None:
+        newFavorite = Favorite(id_user=infoBody["id_user"],id_vehicles=vehicle_id)
+        db.session.add(newFavorite)
+        db.session.commit()
+ 
+        response_body = {
+            "msg":"Planeta Añadido a favoritos"
+        }
+        return jsonify(response_body),200
+    return jsonify({"msg":"Ya lo tienes en favoritos"}),404
+
 
 #Añade una nueva Characters favorita al usuario actual con el people.id = people_id.
 
@@ -584,7 +638,6 @@ def RegisterUser():
     #Validar si el email ya existe , si existe deberiamos de decirle al usuario que ingrese una nueva
     emailExist = User.query.filter_by(email=email).first()
     if emailExist == None:
-        print("No existe")
         user = User(
         name = name,
         lastname = lastname,
@@ -594,8 +647,8 @@ def RegisterUser():
         )
         db.session.add(user)
         db.session.commit()
-        return jsonify({"msg":"Usuario creado"}),200
-    return jsonify({"msg":"Debe de ingresar un correo inexistente "}),404
+        return jsonify({"ok":True,"msg":"Usuario creado"}),200
+    return jsonify({"ok":False,"msg":"Debe de ingresar un correo inexistente "}),200
 
 
 
@@ -611,7 +664,8 @@ def Loginuser():
     if user != None:
         userCheck = user.serialize()
         if emailI == userCheck["email"] and password == userCheck["password"]:
-            access_token = create_access_token(identity=emailI)
+            expires = datetime.timedelta(minutes=1)
+            access_token = create_access_token(identity=emailI,expires_delta=expires)
             return jsonify({"msg":"Login Correcto","token":access_token,"info":{
                 "email":userCheck["email"],
                 "id":userCheck["id"],
@@ -619,21 +673,23 @@ def Loginuser():
                 "name":userCheck["name"],
                 "subscription_date":userCheck["subscription_date"]
         }}),200
-        return jsonify({"msg":"Error en las credenciales."})
+        return jsonify({"msg":"Error en las credenciales."}),401
 
-    return jsonify({"msg":"No hay ningun usuario con este email"}),404
+    return jsonify({"ok":False,"msg":"No hay ningun usuario con este email"}),404
 
 # Listar todos los favoritos que pertenecen al usuario actual
-@app.route('/user/<int:idUser>/favorite',methods=["GET"])
+@app.route('/user/favorite',methods=["GET"])
 @jwt_required()
-def Obtener_Favoritos_User(idUser):
+def Obtener_Favoritos_User():
     current_user = get_jwt_identity()
-    #generamos la consulta
-    user = User.query.filter_by(id=idUser).first()
-    query_user_Favorites = Favorite.query.filter_by(id_user=idUser).all()
 
+    #generamos la consulta
+    user = User.query.filter_by(email=current_user).first()
     if user == None:
         return jsonify({"msg":"El usuario no existe"})
+    userF = user.serialize()
+    id_user = userF["id"]
+    query_user_Favorites = Favorite.query.filter_by(id_user=id_user).all()
     
     if query_user_Favorites == []:
         return jsonify({"msg":"Este usuario no tiene ningun favorito"})
@@ -667,10 +723,14 @@ def Obtener_Favoritos_User(idUser):
 
         dataFinal = list(map(lambda item:CargarNombreEnBaseID(item),result))
         return jsonify({"msg":"estos son los favoritos del usuario","result":result,"user":current_user,"dataFinal":dataFinal}),200 
-            
-
-
+        
 #Ruta favorito protegida
+
+#en este caso el jwt required se va a encargar de validar si mi token expiro o no mediante errores
+@app.route("/validToken",methods=["GET"])
+@jwt_required()
+def ValidToken():
+    return jsonify({"is_logged":True}),200
 
 
 # this only runs if `$ python src/app.py` is executed
