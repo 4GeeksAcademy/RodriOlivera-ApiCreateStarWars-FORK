@@ -371,7 +371,7 @@ def Obtener_Vehicle_Espesifica(idVehicle):
     Vehicles_query = Vehicles.query.filter_by(id=idVehicle).first()
 
     if Vehicles_query == None :
-        return jsonify({"msg":"No hay Vehiculo con ese id"}),404
+        return jsonify({"msg":"No hay Vehiculo con ese id"}),405
     else: 
         return jsonify({"msg":"El vehiculo existe","result":Vehicles_query.serialize()}),200
 
